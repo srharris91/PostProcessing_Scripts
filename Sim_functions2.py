@@ -3,7 +3,7 @@ import re
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import h5py
+#import h5py
 from scipy.interpolate import griddata
 from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
@@ -85,14 +85,65 @@ class sim:
         a1D_060000_vtu = XMLUnstructuredGridReader( FileName=self.vtu_list)
         a1D_060000_vtu.PointArrayStatus = [U]
         # CLIP data range
-        #xmin = 0.1041  
-        #xmax = 0.116
         xmin = 0.103713111302   # true exp region axial
         xmax = 0.11600928642    # true exp region axial
-        #xmax = 0.14
-        #ymin = -0.016
         ymin = -0.0163191665626 # true exp region radial
-        #ymax = 0.0001
+        ymax = 0.00020689279668 # true exp region radial
+        zmin = -0.0012  # true exp region azimuthal
+        zmax = 0.0012   # true exp region azimuthal
+        # clip xmin
+        Clip1 = Clip( ClipType="Plane" )
+        Clip1.Scalars = ['POINTS', U]
+        Clip1.ClipType.Origin = [xmin, 0.0, 0.0]
+        Clip1.ClipType.Normal = [ 1.0, 0.0, 0.0]
+        # clip xmax
+        Clip2 = Clip( ClipType="Plane" )
+        Clip2.Scalars = ['POINTS', U]
+        Clip2.ClipType.Origin = [xmax, 0.0, 0.0]
+        Clip2.ClipType.Normal = [-1.0, 0.0, 0.0]
+        # clip ylow
+        Clip3 = Clip( ClipType="Plane" )
+        Clip3.Scalars = ['POINTS', U]
+        Clip3.ClipType.Origin = [0.0, ymin, 0.0]
+        Clip3.ClipType.Normal = [0.0,  1.0, 0.0]
+        # clip yup
+        Clip4 = Clip( ClipType="Plane" )
+        Clip4.Scalars = ['POINTS', U]
+        Clip4.ClipType.Origin = [0.0, ymax, 0.0]
+        Clip4.ClipType.Normal = [0.0, -1.0, 0.0]
+        # clip zlow
+        Clip5 = Clip( ClipType="Plane" )
+        Clip5.Scalars = ['POINTS', U]
+        Clip5.ClipType.Origin = [0.0, 0.0, zmin]
+        Clip5.ClipType.Normal = [0.0, 0.0, 1.0]
+        # clip yup
+        Clip6 = Clip( ClipType="Plane" )
+        Clip6.Scalars = ['POINTS', U]
+        Clip6.ClipType.Origin = [0.0, 0.0, zmax]
+        Clip6.ClipType.Normal = [0.0, 0.0, -1.0]
+
+        RenderView1 = GetRenderView()
+        DataRepresentation1 = Show()
+
+        writer=CreateWriter(self.sim_dir+self.csv+'.csv')
+        writer.WriteAllTimeSteps=1
+        writer.FieldAssociation="Points"
+        writer.UpdatePipeline()
+        del writer
+        Delete(RenderView1)
+        Delete(DataRepresentation1)
+        del RenderView1
+        del DataRepresentation1
+    def slice_orient_save_slice_vtu_to_csv(self):
+        # read in data
+        U=self.sim_var
+        self.vtu_list=self.read_files_list(self.vtu)
+        a1D_060000_vtu = XMLUnstructuredGridReader( FileName=self.vtu_list)
+        a1D_060000_vtu.PointArrayStatus = [U]
+        # CLIP data range
+        xmin = 0.103713111302   # true exp region axial
+        xmax = 0.11600928642    # true exp region axial
+        ymin = -0.0163191665626 # true exp region radial
         ymax = 0.00020689279668 # true exp region radial
         zmin = -0.0012  # true exp region azimuthal
         zmax = 0.0012   # true exp region azimuthal
@@ -128,15 +179,15 @@ class sim:
         Clip6.ClipType.Normal = [0.0, 0.0, -1.0]
 
         # slice
-        #Slice1 = Slice( SliceType="Plane" )
-        #Slice1.SliceOffsetValues = [0.0]
-        #Slice1.SliceType.Origin = [0.0115, 0.0, 0.0]
-        #Slice1.SliceType.Normal = [0.0, 0.0, 1.0]
+        Slice1 = Slice( SliceType="Plane" )
+        Slice1.SliceOffsetValues = [0.0]
+        Slice1.SliceType.Origin = [0.0, 0.0, 0.0]
+        Slice1.SliceType.Normal = [0.0, 0.0, 1.0]
 
         RenderView1 = GetRenderView()
         DataRepresentation1 = Show()
 
-        writer=CreateWriter(self.sim_dir+self.csv+'.csv')
+        writer=CreateWriter(self.sim_dir+self.csv+'slice.csv')
         writer.WriteAllTimeSteps=1
         writer.FieldAssociation="Points"
         writer.UpdatePipeline()
@@ -145,6 +196,97 @@ class sim:
         Delete(DataRepresentation1)
         del RenderView1
         del DataRepresentation1
+    def slice_orient_save_vtu_to_csv_with_volume(self):
+        # read in data
+        U=self.sim_var
+        self.vtu_list=self.read_files_list(self.vtu)
+        a1D_060000_vtu = XMLUnstructuredGridReader( FileName=self.vtu_list)
+        a1D_060000_vtu.PointArrayStatus = [U]
+
+
+        # addition of Volume data
+        programmableFilter1 = ProgrammableFilter(Input=a1D_060000_vtu)
+        programmableFilter1.Script = """
+            from vtk.numpy_interface import algorithms as algs
+            volume = algs.volume(inputs[0])
+            output.CellData.append(volume, 'volume')
+            """
+        programmableFilter1.RequestInformationScript = ''
+        programmableFilter1.RequestUpdateExtentScript = ''
+        programmableFilter1.CopyArrays = 1
+        programmableFilter1.PythonPath = ''
+
+        # create a new 'Cell Data to Point Data'
+        cellDatatoPointData1 = CellDatatoPointData(Input=programmableFilter1)
+        U='volume'
+
+
+        # CLIP data range
+        xmin = 0.103713111302   # true exp region axial
+        xmax = 0.11600928642    # true exp region axial
+        ymin = -0.0163191665626 # true exp region radial
+        ymax = 0.00020689279668 # true exp region radial
+        zmin = -0.0012  # true exp region azimuthal
+        zmax = 0.0012   # true exp region azimuthal
+        # clip xmin
+        Clip1 = Clip( ClipType="Plane" )
+        Clip1.Scalars = ['POINTS', U]
+        Clip1.ClipType.Origin = [xmin, 0.0, 0.0]
+        Clip1.ClipType.Normal = [ 1.0, 0.0, 0.0]
+        # clip xmax
+        Clip2 = Clip( ClipType="Plane" )
+        Clip2.Scalars = ['POINTS', U]
+        Clip2.ClipType.Origin = [xmax, 0.0, 0.0]
+        Clip2.ClipType.Normal = [-1.0, 0.0, 0.0]
+        # clip ylow
+        Clip3 = Clip( ClipType="Plane" )
+        Clip3.Scalars = ['POINTS', U]
+        Clip3.ClipType.Origin = [0.0, ymin, 0.0]
+        Clip3.ClipType.Normal = [0.0,  1.0, 0.0]
+        # clip yup
+        Clip4 = Clip( ClipType="Plane" )
+        Clip4.Scalars = ['POINTS', U]
+        Clip4.ClipType.Origin = [0.0, ymax, 0.0]
+        Clip4.ClipType.Normal = [0.0, -1.0, 0.0]
+        # clip zlow
+        Clip5 = Clip( ClipType="Plane" )
+        Clip5.Scalars = ['POINTS', U]
+        Clip5.ClipType.Origin = [0.0, 0.0, zmin]
+        Clip5.ClipType.Normal = [0.0, 0.0, 1.0]
+        # clip yup
+        Clip6 = Clip( ClipType="Plane" )
+        Clip6.Scalars = ['POINTS', U]
+        Clip6.ClipType.Origin = [0.0, 0.0, zmax]
+        Clip6.ClipType.Normal = [0.0, 0.0, -1.0]
+         
+        print 'made it to here1'
+        RenderView1 = GetRenderView()
+        print 'made it to here2'
+        #DataRepresentation1 = Show()
+        print 'made it to here3'
+
+        SaveData(self.sim_dir+self.csv+'.csv')
+        #print self.sim_dir,self.csv
+        #writer=CreateWriter(self.sim_dir+self.csv+'.csv',cellDatatoPointData1)
+        #writer=CreateWriter(self.sim_dir+self.csv+'.csv')
+        #writer=CSVWriter()
+        #writer.FileName=self.sim_dir+self.csv+'.csv'
+        print 'made it to here4'
+        #writer.WriteAllTimeSteps=1
+        print 'made it to here5'
+        ##writer.FieldAssociation="Points"
+        #print 'made it to here6'
+        ##print writer.PointData()
+        #print writer.Input
+        #help(writer)
+        #writer.UpdatePipeline()
+        print 'made it to here7'
+        #del writer
+        #Delete(RenderView1)
+        #Delete(DataRepresentation1)
+        del RenderView1
+        #del DataRepresentation1
+        print 'made it to here7'
     def read_csv(self,filename):
         d=np.genfromtxt(filename,delimiter=',',skip_header=1)
         if self.direction=='u':

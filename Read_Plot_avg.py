@@ -136,23 +136,29 @@ class exp_avg:
         
 def plot_data(sim,exp,direction):
     #fig = plt.figure(figsize=(5.4,5))
-    fig = plt.figure(figsize=(7.36,5))
-    axavg      =plt.subplot2grid((4,140),(0,0),rowspan=4,colspan=40)
-    axexp1     =plt.subplot2grid((4,140),(0,40),rowspan=2,colspan=60)
-    axexp2     =plt.subplot2grid((4,140),(2,40),rowspan=2,colspan=60)
-    axexp3     =plt.subplot2grid((4,140),(0,100),rowspan=4,colspan=40,sharey=axavg)
+    fig = plt.figure(figsize=(8.36,5))
+    axavg = plt.subplot2grid((4,140),(0,0),rowspan=4,colspan=40,aspect='auto')
     if direction=='u':
         colormap=np.linspace(np.nanmin(sim.Uavg),np.nanmax(sim.Uavg),300)
-        plt.colorbar(axavg.contourf(-sim.Yall,sim.Xall,sim.Uavg,colormap,cmap='jet'),ax=axavg)
-        colormap=np.linspace(np.nanmin(sim.Uavg[sim.exp_range]),np.nanmax(sim.Uavg[sim.exp_range]),300)
-        plt.colorbar(axexp1.tricontourf(-sim.Yall[sim.exp_range],sim.Xall[sim.exp_range],sim.Uavg[sim.exp_range],colormap,cmap='jet'),ax=axexp1)
-        plt.colorbar(axexp2.contourf(-exp.x,exp.y,exp.v,colormap,cmap='jet',),ax=axexp2)
+        plt.colorbar(axavg.contourf(-sim.Yall,sim.Xall,sim.Uavg,colormap,cmap='jet'),ax=axavg,ticks=[0,1.25],)
+        axexp1 = plt.subplot2grid((4,140),(0,40),rowspan=2,colspan=60)
+        axexp2 = plt.subplot2grid((4,140),(2,40),rowspan=2,colspan=60,sharex=axexp1,sharey=axexp1)
+        axexp3 = plt.subplot2grid((4,140),(0,100),rowspan=4,colspan=40,sharey=axavg)
+        #colormap=np.linspace(np.nanmin(sim.Uavg[sim.exp_range]),np.nanmax(sim.Uavg[sim.exp_range]),300)
+        colormap=np.linspace(0.,np.nanmax(sim.Uavg[sim.exp_range]),300)
+        plt.colorbar(axexp1.tricontourf(-sim.Yall[sim.exp_range],sim.Xall[sim.exp_range],sim.Uavg[sim.exp_range],colormap,cmap='jet'),ax=axexp1,ticks=[0.,0.5])
+        plt.colorbar(axexp2.contourf(-exp.x,exp.y,exp.v,colormap,cmap='jet',aspect='auto'),ax=axexp2,ticks=[0.,0.5])
     elif direction=='v':
-        colormap=np.linspace(np.nanmin(sim.Vavg),np.nanmax(sim.Vavg),300)
-        plt.colorbar(axavg.contourf(-sim.Yall,sim.Xall,sim.Vavg,colormap,cmap='jet'),ax=axavg)
-        colormap=np.linspace(np.nanmin(exp.u),np.nanmax(sim.Vavg[sim.exp_range]),300)
-        plt.colorbar(axexp1.tricontourf(-sim.Yall[sim.exp_range],sim.Xall[sim.exp_range],sim.Vavg[sim.exp_range],colormap,cmap='jet'),ax=axexp1)
-        plt.colorbar(axexp2.contourf(-exp.x,exp.y,exp.u,colormap,cmap='jet',),ax=axexp2)
+        #colormap=np.linspace(np.nanmin(sim.Urms),np.nanmax(sim.Urms),300)
+        colormap=np.linspace(0,np.nanmax(sim.Urms),300)
+        plt.colorbar(axavg.contourf(-sim.Yall,sim.Xall,sim.Urms,colormap,cmap='jet'),ax=axavg,ticks=[0.,0.2])
+        axexp1 = plt.subplot2grid((4,140),(0,40),rowspan=2,colspan=60)
+        axexp2 = plt.subplot2grid((4,140),(2,40),rowspan=2,colspan=60,sharex=axexp1,sharey=axexp1)
+        axexp3 = plt.subplot2grid((4,140),(0,100),rowspan=4,colspan=40,sharey=axavg)
+        #colormap=np.linspace(np.nanmin(exp.u),np.nanmax(sim.Urms[sim.exp_range]),300)
+        colormap=np.linspace(0,np.nanmax(sim.Urms[sim.exp_range]),300)
+        plt.colorbar(axexp1.tricontourf(-sim.Yall[sim.exp_range],sim.Xall[sim.exp_range],sim.Urms[sim.exp_range],colormap,cmap='jet'),ax=axexp2,ticks=[0,0.1])
+        plt.colorbar(axexp2.contourf(-exp.x,exp.y,exp.rmsv,colormap,cmap='jet',aspect='auto'),ax=axexp1,ticks=[0,0.1])
     # patch to axavg
     axavg.add_patch(patches.Rectangle(
         (-sim.ymin,sim.xmin),
@@ -162,53 +168,66 @@ def plot_data(sim,exp,direction):
         edgecolor='red',
         linewidth=2,
         ))
-    axavg.set_xlabel(r'$Y/D$')
-    axavg.set_ylabel(r'$X/D$')
-    axavg.axis('equal')
+
+    axavg.set_xlabel(r'$y/D$')
+    axavg.set_ylabel(r'$x/D$')
+    #axavg.axis('equal')
+    # stuff for exp axexp1
+    axexp1.set_title('exp')
+    axexp1.set_xlabel(r'$y/D$')
+    axexp1.set_ylabel(r'$x/D$')
+    #axexp1.axis('image')
     # stuff for sim axexp1
-    axexp1.set_title('sim')
-    axexp1.set_xlabel(r'$Y/D$')
-    axexp1.set_ylabel(r'$X/D$')
-    axexp1.axis('scaled')
-    # stuff for exp axexp2
-    axexp2.set_title('exp')
-    axexp2.set_xlabel(r'$Y/D$')
-    axexp2.set_ylabel(r'$X/D$')
-    axexp2.axis('scaled')
+    axexp2.set_title('sim')
+    axexp2.set_xlabel(r'$y/D$')
+    axexp2.set_ylabel(r'$x/D$')
+    #axexp2.axis('image')
+    axexp2.axis([0,2.,14,15.5])
     # figure for centerline
     if direction=='u':
         lns1=axexp3.plot(sim.UCL,sim.XCL,'b-',label=r'sim $u$')
         lns2=axexp3.plot(exp.VCL.flatten(),exp.YCL.flatten(),'bo',label=r'exp $u$')
-        #axexp3_x=axexp3.twiny()
-        #lns3=axexp3_x.plot(sim.UrmsCL,sim.XCL,'r-',label=r'sim $u_{rms}$')
-        #lns4=axexp3_x.plot(exp.VrmsCL.flatten(),exp.YCL.flatten(),'ro',label=r'exp $u_{rms}$')
         axexp3.set_xlabel(r'$U_{CL}/U_{ref}$')
-        #axexp3_x.set_xlabel(r'$U_{rms}/U_{ref}$')
     elif direction=='v':
-        #lns1=axexp3.plot(sim.VCL,sim.XCL,'b-',label=r'sim $v$')
-        #lns2=axexp3.plot(exp.UCL.flatten(),exp.YCL.flatten(),'bo',label=r'exp $v$')
-        #axexp3_x=axexp3.twiny()
-        #lns3=axexp3_x.plot(sim.VrmsCL,sim.XCL,'r-',label=r'sim $v_{rms}$')
-        #lns4=axexp3_x.plot(exp.UrmsCL.flatten(),exp.YCL.flatten(),'ro',label=r'exp $v_{rms}$')
         lns1=axexp3.plot(sim.UrmsCL,sim.XCL,'b-',label=r'sim $u_{rms}$')
         lns2=axexp3.plot(exp.VrmsCL.flatten(),exp.YCL.flatten(),'bo',label=r'exp $u_{rms}$')
         axexp3.set_xlabel(r'$U_{rms}/U_{ref}$')
-        #axexp3.set_xticklabels(axexp3.xaxis.get_majorticklabels(),rotation=45)
-        #axexp3_x.set_xlabel(r'$V_{rms}/U_{ref}$')
     lns=lns1+lns2#+lns3+lns4
     labs=[l.get_label() for l in lns]
-    axexp3.set_ylabel(r'$X/D$')
-    axexp3.legend(loc='upper right',framealpha=0.75)
-    #axexp3.legend(lns,labs,loc='upper right',framealpha=0.75)
-    #axexp3_x.legend(lns,labs,loc='upper right',framealpha=0.75)
+    axexp3.set_ylabel(r'$x/D$')
+    axexp3.legend(loc='upper right',framealpha=0.75,numpoints=1)
     fig.tight_layout()
+    # arrow path for exp
+    xyA=(-sim.ymax,sim.xmin)
+    xyB=(-sim.ymin,sim.xmax)
+    axexp1.add_artist(patches.ConnectionPatch(
+        xyA=xyA,
+        xyB=xyB,
+        coordsA="data",
+        coordsB="data",
+        axesA=axexp1,
+        axesB=axavg,
+        linewidth=2,
+        ))
+    # arrow path for sim
+    xyA=(-sim.ymax,sim.xmax)
+    xyB=(-sim.ymin,sim.xmin)
+    axexp2.add_artist(patches.ConnectionPatch(
+        xyA=xyA,
+        xyB=xyB,
+        coordsA="data",
+        coordsB="data",
+        axesA=axexp2,
+        axesB=axavg,
+        linewidth=2,
+        ))
     plt.savefig(sim.save_directory+'/ave__'+direction+'.png',bbox_inches='tight')
 
 # average simulation data
 #csv_filename='/home/shaun/Desktop/DA/Create_Plots/From_Jeff_new_BC/Data/data_slice_000_z.csv'
 #save_directory='/home/shaun/Desktop/DA/Create_Plots/From_Jeff_new_BC/PostProcess'
-csv_filename='/home/shaun/Desktop/DA/Create_Plots/From_Jeff_new_BC/Data2/Instant_and_last_ave/Last_ave.csv'
-save_directory='/home/shaun/Desktop/DA/Create_Plots/From_Jeff_new_BC/Data2/Instant_and_last_ave'
+csv_filename='../Create_Plots/From_Jeff_new_BC/Data2/Instant_and_last_ave/Last_ave.csv'
+save_directory='../Create_Plots/From_Jeff_new_BC/Data2/Instant_and_last_ave'
 s_avg=sim_avg(csv_filename,save_directory)
 
 ## read csv create npy files ( runs once )
@@ -218,11 +237,11 @@ s_avg=sim_avg(csv_filename,save_directory)
 s_avg.load()
 
 # average experimental data
-ave_v_npy='/home/shaun/Desktop/DA/DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/ave_v.npy'
-ave_u_npy='/home/shaun/Desktop/DA/DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/ave_u.npy'
-rms_v_npy='/home/shaun/Desktop/DA/DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/RMSv.npy'
-rms_u_npy='/home/shaun/Desktop/DA/DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/RMSu.npy'
-mat_filename = '/home/shaun/Desktop/DA/DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/T093013_01_Velocity_1-500.mat'
+ave_v_npy='../DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/ave_v.npy'
+ave_u_npy='../DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/ave_u.npy'
+rms_v_npy='../DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/RMSv.npy'
+rms_u_npy='../DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/Ave_rms/RMSu.npy'
+mat_filename = '../DA_ExperimentalData/From_JFrank_5000_cold_SandiaC/T093013_01_Velocity_1-500.mat'
 e_avg=exp_avg(ave_u_npy,ave_v_npy,rms_u_npy,rms_v_npy,mat_filename)
 ## load npy
 e_avg.load()
