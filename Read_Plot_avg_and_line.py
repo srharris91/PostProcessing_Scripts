@@ -38,6 +38,7 @@ class sim_avg:
         ny=260j
         self.Xall,self.Yall=np.mgrid[0:30:nx,-4:4:ny] # make grid of slice down the middle (if more data is given, can do slice of whole domain to get the whole experimental region)
         self.XCL,self.YCL=np.mgrid[0:30:nx,0:1:1j] # make grid of slice down the middle (if more data is given, can do slice of whole domain to get the whole experimental region)
+        self.Xline,self.Yline=np.mgrid[15:16:1j,0:2:126j] # make grid of slice down the middle (if more data is given, can do slice of whole domain to get the whole experimental region)
         points=np.array([x,y]).T
         self.Uexp=griddata(points,uexp,(self.Xall,self.Yall),method='linear')
         self.Urms=griddata(points,urms,(self.Xall,self.Yall),method='linear')

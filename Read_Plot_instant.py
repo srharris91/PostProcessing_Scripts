@@ -75,30 +75,93 @@ class sim_avg:
         self.ywidth=self.ymax-self.ymin
 
 def plot_data(sim):
-    fig = plt.figure(figsize=(3.0,5))
+    fig = plt.figure(figsize=(6.0,5))
     #fig = plt.figure(figsize=(7.36,5))
-    #axavg      =plt.subplot2grid((4,140),(0,0),rowspan=4,colspan=40)
-    axavg=plt.subplot(111)
+    ax_whole_domain = plt.subplot2grid((4,100),(0,0),rowspan=4,colspan=50,aspect='equal',adjustable='box-forced')
     colormap=np.linspace(np.nanmin(sim.U),np.nanmax(sim.U),300)
-    plt.colorbar(axavg.contourf(-sim.Yall,sim.Xall,sim.U,colormap,cmap='jet'),ax=axavg)
-    # patch to axavg
-    axavg.add_patch(patches.Rectangle(
+    #ax_whole_domain.contour (-sim.Yall,sim.Xall,sim.U,colormap,cmap='jet')
+    whole_colorbar=ax_whole_domain.contourf(-sim.Yall,sim.Xall,sim.U,colormap,cmap='jet')
+    plt.colorbar(whole_colorbar,ax=ax_whole_domain,ticks=[0.,0.25,0.5,0.75,1.,1.25])
+    # get rid of white lines in pdf
+    for c in whole_colorbar.collections:
+        c.set_edgecolor("face")
+    # patch to ax_whole_domain
+    ax_whole_domain.add_patch(patches.Rectangle(
         (-sim.ymin,sim.xmin),
         -sim.ywidth,
-        sim.xwidth,
+        1.5,
         fill=False,
         edgecolor='red',
         linewidth=2,
         ))
-    axavg.set_xlabel(r'$Y/D$')
-    axavg.set_ylabel(r'$X/D$')
-    axavg.axis('scaled')
+    ax_whole_domain.add_patch(patches.Rectangle(
+        (-sim.ymin,sim.xmin),
+        -sim.ywidth,
+        0.75,
+        fill=False,
+        edgecolor='red',
+        linewidth=2,
+        hatch='////'
+        ))
+    # add axes for zoomed in area
+    ax_zoomed = plt.subplot2grid((4,100),(1,50),rowspan=2,colspan=50,aspect='equal',adjustable='box-forced')
+    zoomed_area=(
+            (-sim.Yall>0) &
+            (-sim.Yall<2) & 
+            (sim.Xall>14) &
+            (sim.Xall<15.5))
+    colormap=np.linspace(np.nanmin(sim.U[zoomed_area]),np.nanmax(sim.U[zoomed_area]),300)
+    #ax_zoomed.tricontour(-sim.Yall[zoomed_area],sim.Xall[zoomed_area],sim.U[zoomed_area],colormap,cmap='jet')
+    zoomed_colorbar=ax_zoomed.tricontourf(-sim.Yall[zoomed_area],sim.Xall[zoomed_area],sim.U[zoomed_area],colormap,cmap='jet')
+    plt.colorbar(zoomed_colorbar,ax=ax_zoomed,ticks=[0.02,0.1,0.2,0.3,0.4,0.5])
+    # get rid of white lines in pdf
+    for c in zoomed_colorbar.collections:
+        c.set_edgecolor("face")
+    #zoomed_colorbar.solids.set_edgecolor("face")
+    ax_whole_domain.set_xlabel(r'$y/D$')
+    ax_whole_domain.set_ylabel(r'$x/D$')
+    ax_zoomed.set_xlabel(r'$y/D$')
+    ax_zoomed.set_ylabel(r'$x/D$')
+    ax_zoomed.axis('image')
+    # add arrow patch
+    xyA=(0.01,14.01)
+    xyB=(2.,14.)
+    ax_zoomed.add_artist(patches.ConnectionPatch(
+        xyA=xyA,
+        xyB=xyB,
+        coordsA='data',
+        coordsB='data',
+        axesA=ax_zoomed,
+        axesB=ax_whole_domain,
+        linewidth=2,
+        ))
+    xyA=(0.01,15.49)
+    xyB=(2.,15.5)
+    ax_zoomed.add_artist(patches.ConnectionPatch(
+        xyA=xyA,
+        xyB=xyB,
+        coordsA='data',
+        coordsB='data',
+        axesA=ax_zoomed,
+        axesB=ax_whole_domain,
+        linewidth=2,
+        ))
+    #ax_zoomed.axhline(14.75,color='k',linewidth=2)
+    ax_zoomed.add_patch(patches.Rectangle(
+        (-sim.ymin,sim.xmin),
+        -sim.ywidth,
+        0.75,
+        fill=False,
+        edgecolor='red',
+        linewidth=2,
+        hatch='/'
+        ))
     fig.tight_layout()
-    plt.savefig(sim.save_directory+'/Instantaneous__u.png',bbox_inches='tight')
+    plt.savefig(sim.save_directory+'/Instantaneous__u.pdf',bbox_inches='tight')
 
 # average simulation data
-csv_filename='/home/shaun/Desktop/DA/Create_Plots/DA_paper/Updated_BC/Reference/Instantaneous/Instant.csv'
-save_directory='/home/shaun/Desktop/DA/Create_Plots/DA_paper/Updated_BC/Reference/Instantaneous'
+csv_filename='../Create_Plots/DA_paper/Updated_BC/Reference/Instantaneous/Instant.csv'
+save_directory='../Create_Plots/DA_paper/Updated_BC/Reference/Instantaneous'
 s_avg=sim_avg(csv_filename,save_directory)
 
 ## read csv create npy files ( runs once )

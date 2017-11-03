@@ -7,7 +7,7 @@ import Sim_functions2 as sim
 plt.style.use('seaborn-paper')
 
 
-def plot_triang(ax,sim):
+def plot_triang(ax,sim,taui):
     x=sim.xcsv[0,:]
     y=sim.ycsv[0,:]
     u=sim.ucsv[0,:]
@@ -33,7 +33,11 @@ def plot_triang(ax,sim):
         ax.axis([0.,2.,14.,15.5])
     ax.set_xlabel(r'$y/D$',)
     ax.set_ylabel(r'$x/D$',)
-    ax.set_title(sim.sim_dir.split('/')[-2].split('_')[-1])
+    #ax.set_title(sim.sim_dir.split('/')[-2].split('_')[-1])
+    if taui=='Exp':
+        ax.set_title(taui)
+    else:
+        ax.set_title(r'$\tau = %s$'%taui)
     #plt.savefig('OI_'+title+'_'+cwd+'__0_4050000.png',bbox_inches='tight')
 
 # import commandline arguments
@@ -47,11 +51,11 @@ parser.add_argument('direction', metavar='l', type=str, nargs=1,
 args = parser.parse_args()
 #if args.direction==['u',]:
 # get list of subdirectories
-sim_C_0 = '../Create_Plots/DA_paper/Updated_BC/OI/C_0/'
-sim_C_0_0001 = '../Create_Plots/DA_paper/Updated_BC/OI/C_0.0001/'
-sim_C_0_1 = '../Create_Plots/DA_paper/Updated_BC/OI/C_0.1/'
-sim_C_0_5 = '../Create_Plots/DA_paper/Updated_BC/OI/C_0.5/'
-sim_C_exp = '../Create_Plots/DA_paper/Updated_BC/OI/C_exp/'
+sim_C_0 = '../Create_Plots/DA_paper/Updated_BC/Nudging/C_0/'
+sim_C_0_000001 = '../Create_Plots/DA_paper/Updated_BC/Nudging/C_0.000001/'
+sim_C_0_0001 = '../Create_Plots/DA_paper/Updated_BC/Nudging/C_0.0001/'
+sim_C_0_1 = '../Create_Plots/DA_paper/Updated_BC/Nudging/C_0.1/'
+sim_C_exp = '../Create_Plots/DA_paper/Updated_BC/Nudging/C_exp/'
 calc_options_C_0={
     'direction':args.direction[0],
     'sim_dir':sim_C_0,#'../Create_Plots/DA_paper/Updated_BC/OI/C_0/',
@@ -59,13 +63,13 @@ calc_options_C_0={
     'vtu':'OI_C_0.4050000',     # vtu file name
     'sim_var':'U',          # read in velocity
     }
+calc_options_C_0_000001 = calc_options_C_0.copy()
 calc_options_C_0_0001 = calc_options_C_0.copy()
 calc_options_C_0_1 = calc_options_C_0.copy()
-calc_options_C_0_5 = calc_options_C_0.copy()
 calc_options_C_exp = calc_options_C_0.copy()
+calc_options_C_0_000001['sim_dir']=sim_C_0_000001
 calc_options_C_0_0001['sim_dir']=sim_C_0_0001
 calc_options_C_0_1['sim_dir']=sim_C_0_1
-calc_options_C_0_5['sim_dir']=sim_C_0_5
 calc_options_C_exp['sim_dir']=sim_C_exp
 # may need to uncomment this line below to get the experimental csv file data
 #calc_options_C_exp['sim_var']='WTestExp'
@@ -80,8 +84,8 @@ axsim3 = plt.subplot2grid((4,180),(2,120),rowspan=2,colspan=60,aspect='equal',ad
 axexp0 = plt.subplot2grid((4,180),(0,105),rowspan=2,colspan=60,aspect='equal',adjustable='box-forced',sharex=axsim0,sharey=axsim0)
 # for each simulation, plot in respective axis
 for ax,calc_options in zip(
-        [ axsim0,           axsim1,                 axsim2,             axsim3,             axexp0,             ],
-        [ calc_options_C_0, calc_options_C_0_0001,  calc_options_C_0_1, calc_options_C_0_5, calc_options_C_exp  ]
+        [ axsim0,           axsim1,                     axsim2,                 axsim3,             axexp0,             ],
+        [ calc_options_C_0, calc_options_C_0_0001,    calc_options_C_0_000001,  calc_options_C_0_1, calc_options_C_exp  ]
         ):
 
     sim1 = sim.sim(calc_options)
@@ -92,9 +96,12 @@ for ax,calc_options in zip(
     else:
         sim1.slice_orient_save_slice_vtu_to_csv()
     sim1.read_csv_files()
+    # read taui
+    with open(sim1.sim_dir+'tau.txt') as tau_file:
+        taui=tau_file.read().rstrip()
 
     # now plot
-    plot_triang(ax,sim1)
+    plot_triang(ax,sim1,taui)
 fig.tight_layout()
 #plt.show()
-plt.savefig('../Plots/'+args.direction[0] + '_velocity_Render_Instant_Shots.pdf')
+plt.savefig('../Plots/'+args.direction[0] + '_velocity_Render_Instant_Shots_Nudge.pdf')

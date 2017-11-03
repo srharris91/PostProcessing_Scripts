@@ -138,6 +138,7 @@ class sim:
         # read in data
         U=self.sim_var
         self.vtu_list=self.read_files_list(self.vtu)
+        print 'vtu_list = ',self.vtu_list
         a1D_060000_vtu = XMLUnstructuredGridReader( FileName=self.vtu_list)
         a1D_060000_vtu.PointArrayStatus = [U]
         # CLIP data range
