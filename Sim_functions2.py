@@ -9,7 +9,21 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 class sim:
+    """sim class of functions
+    
+    Bunch of functions to be used with postprocessing simulation data from CharlesX output (Paraview and Box_Probe)
+
+    """
     def __init__(self,calc_options=None):
+        """Initialize sim class
+
+        Parameters:
+        calc_options -- Dictionary input containing several of input values [default = None]
+
+        Info:
+        If calc_options is None, then will call a bunch of default values listed in this function
+        Otherwise, will use set_values(**calc_options) function to set the desired values
+        """
         if calc_options==None:
             self.sim_dir =  './'
             self.direction = 'u'
@@ -35,33 +49,68 @@ class sim:
         else:
             self.set_values(**calc_options)
     def set_values(self, sim_dir='./',direction='u',manufactured=False,xi=0,yi=0,method=1,option=2,t=0,X=0,Y=0,Z=0,U=0,homogeneous=(0,-1),labelfont={'fontsize':14,'fontname':'Times New Roman'},RGB=[0., 0.0, 0.0, 1.0, 20., 1.0, 0.0, 0.0],vtu='OI_C',read_from='box_probe',sim_var='U',X_interp_pts=6j,Y_interp_pts=9j,Z_interp_pts=1j):
-            self.sim_dir = sim_dir
-            self.direction = direction
-            self.manufactured = manufactured
-            self.xi = xi
-            self.yi = yi
-            self.method = method
-            self.option = option
-            self.t,self.X,self.Y,self.Z,self.U = t,X,Y,Z,U
-            self.homogeneous=homogeneous
-            self.labelfont=labelfont
-            if direction=='u':
-                self.title='X'
-            elif direction=='v':
-                self.title='Y'
-            elif direction=='w':
-                self.title='Z'
-            self.RGB=RGB
-            self.vtu=vtu
-            self.csv=self.vtu+'_csv'
-            self.read_from=read_from
-            self.sim_var=sim_var
-            self.X_interp_pts=X_interp_pts
-            self.Y_interp_pts=Y_interp_pts
-            self.Z_interp_pts=Z_interp_pts
-            self.loaded=False
+        """Initialize equation using calc_options dictionary input, if not specified, then the defaults are shown below
+
+            sim_dir='./'
+            direction='u'
+            manufactured=False
+            xi=0
+            yi=0
+            method=1
+            option=2
+            t=0
+            X=0
+            Y=0
+            Z=0
+            U=0
+            homogeneous=(0,-1)
+            labelfont={'fontsize':14
+            'fontname':'Times New Roman'}
+            RGB=[0., 0.0, 0.0, 1.0, 20., 1.0, 0.0, 0.0]
+            vtu='OI_C'
+            read_from='box_probe'
+            sim_var='U'
+            X_interp_pts=6j
+            Y_interp_pts=9j
+            Z_interp_pts=1j
+
+        """
+        self.sim_dir = sim_dir
+        self.direction = direction
+        self.manufactured = manufactured
+        self.xi = xi
+        self.yi = yi
+        self.method = method
+        self.option = option
+        self.t,self.X,self.Y,self.Z,self.U = t,X,Y,Z,U
+        self.homogeneous=homogeneous
+        self.labelfont=labelfont
+        if direction=='u':
+            self.title='X'
+        elif direction=='v':
+            self.title='Y'
+        elif direction=='w':
+            self.title='Z'
+        self.RGB=RGB
+        self.vtu=vtu
+        self.csv=self.vtu+'_csv'
+        self.read_from=read_from
+        self.sim_var=sim_var
+        self.X_interp_pts=X_interp_pts
+        self.Y_interp_pts=Y_interp_pts
+        self.Z_interp_pts=Z_interp_pts
+        self.loaded=False
 
     def read_files_list(self,startswith):
+        """Return list of files that startswith
+
+        Parameters:
+        self -- sim class of functions
+        startswith -- str to be matched with files in self.sim_dir location
+
+        Returns:
+        list of files in location of self.sim_dir
+        """
         # read in files
         read_list=[]
         for file in os.listdir(self.sim_dir):
@@ -79,6 +128,13 @@ class sim:
         read_list.sort(key=natural_keys)
         return read_list
     def slice_orient_save_vtu_to_csv(self):
+        """Slice and save a vtu file and convert to csv
+
+        Uses paraview.simple and functions to slice vtu file and outputs to a csv file.
+        Reads list of files that match self.vtu in the self.sim_dir location.
+        Then outputs
+
+        """
         # read in data
         U=self.sim_var
         self.vtu_list=self.read_files_list(self.vtu)
@@ -135,6 +191,9 @@ class sim:
         del RenderView1
         del DataRepresentation1
     def slice_orient_save_slice_vtu_to_csv(self):
+        """
+        Slices and saves a vtu to csv using paraview.simple
+        """
         # read in data
         U=self.sim_var
         self.vtu_list=self.read_files_list(self.vtu)
@@ -198,6 +257,9 @@ class sim:
         del RenderView1
         del DataRepresentation1
     def slice_orient_save_vtu_to_csv_with_volume(self):
+        """ 
+        Slices and saves vtu to csv with volume data.  
+        """
         # read in data
         U=self.sim_var
         self.vtu_list=self.read_files_list(self.vtu)
@@ -289,6 +351,12 @@ class sim:
         #del DataRepresentation1
         print 'made it to here7'
     def read_csv(self,filename):
+        """ 
+        Read in csv file and non-dimensionalize the data according to 
+        D_ref = 0.00745 nozzle diameter
+        U_ref = 27.5 and bulk velocity of jet
+        """
+        
         d=np.genfromtxt(filename,delimiter=',',skip_header=1)
         if self.direction=='u':
             u,x,y,z=d[:,-6],d[:,-3],d[:,-2],d[:,-1]
@@ -305,6 +373,10 @@ class sim:
         u = u/U_ref
         return [x,y,z,u]
     def read_csv_files(self):
+        """
+        Read list of files that matches self.csv pattern
+        WARNING: creating time axis from user inputs from CharlesX.input file.  May need to edit later.
+        """
         self.csv_files=self.read_files_list(self.csv)
         xl,yl,zl,ul=[],[],[],[]
         for filenamei in self.csv_files:
@@ -330,6 +402,10 @@ class sim:
         t=np.arange(self.ucsv.shape[0])*dt_sim
         self.t = t/(D_ref/U_ref)
     def interpolate_csv_data(self):
+        """
+        Take xcsv,ycsv,zcsv,ucsv variables and interpolate them onto a grid using griddata
+        and creates self.Xall, self.Yall, self.Zall, and self.Uall
+        """
         x=self.xcsv
         y=self.ycsv
         z=self.zcsv
@@ -346,11 +422,25 @@ class sim:
         self.Uall=np.array(Uall)
         print 'Uall.shape=',self.Uall.shape
     def save_all_data_npy(self):
+        """
+        save all interpolated data to npy files
+        {self.sim_dir}Xall.npy saved self.Xall
+        {self.sim_dir}Yall.npy saved self.Yall
+        {self.sim_dir}Zall.npy saved self.Zall
+        {self.sim_dir+self.sim_var}all_{self.direction}.npy saved self.Uall
+        """
         np.save(self.sim_dir+self.sim_var+'all_'+self.direction,self.Uall)
         np.save(self.sim_dir+'Xall',self.Xall)
         np.save(self.sim_dir+'Yall',self.Yall)
         np.save(self.sim_dir+'Zall',self.Zall)
     def load_all_data_npy(self):
+        """
+        Load all the interpolated data from npy files
+        {self.sim_dir}Xall.npy saved self.Xall
+        {self.sim_dir}Yall.npy saved self.Yall
+        {self.sim_dir}Zall.npy saved self.Zall
+        {self.sim_dir+self.sim_var}all_{self.direction}.npy saved self.Uall
+        """
         self.Uall=np.load(self.sim_dir+self.sim_var+'all_'+self.direction+'.npy')
         self.Xall=np.load(self.sim_dir+'Xall.npy')
         self.Yall=np.load(self.sim_dir+'Yall.npy')
@@ -358,6 +448,15 @@ class sim:
         self.t=np.arange(self.Uall.shape[0]) * 1.E-7 * 1000
 
     def read_probe(self):
+        """
+        CharlesX has box_probe data as well.  This function helps to read in that data
+        from self.read_probe
+        named box_probe.U-X
+        and box_probe.X
+        and box_probe.Y
+        and box_probe.Z
+         then non-dimensionalizes the data by U_ref and D_ref with respective values of 27.5 and 0.00745
+        """
         if self.direction=='u':
             ux='U-X'
         elif self.direction=='v':
@@ -397,6 +496,9 @@ class sim:
         # save specific pt to class variables
 
     def plot_csv(self,colormap=True):
+        """
+        Plots the first slice of Uall in the Xall, Yall plane
+        """
         fig = plt.figure()
         ax = plt.subplot(111)
         if colormap:
@@ -423,6 +525,9 @@ class sim:
         plt.tight_layout()
 
     def plot_rms(self):
+        """
+        Plots an average of simulation data along with the rms values of the first time z plane
+        """
         fig = plt.figure()
         ax = plt.subplot(111)
         average = np.nanmean(self.Uall,axis=self.homogeneous)[np.newaxis,:,:,np.newaxis]
@@ -451,12 +556,19 @@ class sim:
     ###################################################################
     # Integral length scale functions
     def extract_row_from_all(self):
+        """
+        takes one row from Xall, Yall, Zall and Uall in the x-direction
+        """
         self.X = self.Xall[:,self.yi,0]
         self.Y = self.Yall[0,self.yi,0]
         self.Z = self.Zall[0,self.yi,0]
         self.U = self.Uall[:,:,self.yi,:]
 
     def set_manufactured_r(self):
+        """
+        sets u as an equation using option 1 or 2
+        for use with the manufactured length scale calculations
+        """
         self.r=self.X - self.X[self.xi]
         self.u=np.empty((30,)+(len(self.r),)+(20,)) # t,y,z
         if self.option==1:
@@ -465,11 +577,19 @@ class sim:
             self.u = np.cos(self.r).reshape((len(self.r),1)) + 0.08*(2.*np.random.random((len(self.r),)+self.u.shape[1:])-1.0)
 
     def set_uprime_r(self):
+        """
+        calculates fluctuations u' values as U_instant-u_avg
+        saves as self.u
+        """
         # calc u' v' and w'  velocity prime values
         u_avg = np.nanmean(self.U,axis=self.homogeneous)[np.newaxis,:,np.newaxis]
         self.u = self.U-u_avg
 
     def calc_R11_r_sim(self):
+        """
+        Calculates R_{11}(r) from u and the distance along x-axis
+        could use method=0,1, or 2
+        """
         nx = int(self.u.shape[1]) # axial domain
         self.R11 = np.zeros(nx)
         if self.method==0:
@@ -495,6 +615,9 @@ class sim:
         self.R11_norm =  self.R11/self.R11[self.xi]
 
     def set_plot_label_r(self):
+       """ 
+       set self.label using given direction, X, Y, method, and option used
+       """ 
         print 'option=',self.option
         self.label='sim,%s,x=%.4f,y=%.4f,m=%i,o=%i'%(
                 self.direction,
@@ -503,9 +626,15 @@ class sim:
                 self.method ,
                 self.option ,)
     def plot_R11_r_sim(self,ax,label='',**kwargs):
+        """
+        plots self.R11_norm vs self.r on ax axis
+        """
         self.set_plot_label_r()
         ax.plot(self.r,self.R11_norm,label=self.label+','+label,**kwargs)
     def plot_axis_labels_r(self,ax):
+        """
+        add axis labels on R_11(r) ax plot
+        """
         ax.set_xlabel(r'$r/D$',**self.labelfont)
         if self.direction=='u':
             ax.set_ylabel(r'$R_{11}(r)/R_{11}(0)$',**self.labelfont)
@@ -517,10 +646,17 @@ class sim:
         plt.tight_layout()
 
     def calc_integral_length_L(self):
+        """
+        calculate the integral length scale  L=int(R11,r,0,max(r))
+        """
         # calc L integral scale
         self.L = np.trapz(self.R11_norm,x=self.r)
         print 'L= ',self.L
     def calc_taylor_length_lambda(self,ax=None):
+        """
+        calculate the taylor length scale  lambda=(-f''/2.)^-0.5
+        where f''=d2R/dr2 at r=self.xi
+        """
         r=self.r
         R11=self.R11_norm
 
@@ -541,6 +677,13 @@ class sim:
         print 'TaylorL=',self.lambdaf
 
     def Manufactured_R11_r(self):
+        """
+        using manufactured u values, we have an equation for the expected R11
+        we can test our equations for calculating R11 using this
+        using option=1 or option=2
+        
+        Returns R11_norm(r)
+        """
         L = self.r[-1]-self.r[0]
         # option 1
         if self.option==1:
@@ -564,6 +707,9 @@ class sim:
         return R11_norm
 
     def R11_r_calc_plot(self,ax,label=''):
+        """
+        Calculate and plot R11(r) on ax
+        """
         # calculate and plot R11(r)
         # for manufactured solution only
         if self.manufactured:
@@ -598,6 +744,9 @@ class sim:
             self.set_plot_label_r()
             ax.plot(self.r,R11simMNF,marker='x',linewidth=0,label=self.label+' analytic')
     def save_R11_r(self,f_handle,):
+        """
+        save R11(r) to R11_output/XYR11/ijXYR11_xi_yi_X,Y
+        """
         np.savetxt(f_handle,[[self.X[self.xi],self.Y,self.L,self.lambdaf]],delimiter=' ')
         if self.direction=='u':
             np.save('R11_output/XYR11/ijXYR11_%i_%i_%.4f_%.4f'%(self.xi,self.yi,self.X[self.xi],self.Y),self.R11_norm)
@@ -609,6 +758,9 @@ class sim:
             np.save('R33_output/XYR33/ijXYR33_%i_%i_%.4f_%.4f'%(self.xi,self.yi,self.X[self.xi],self.Y),self.R11_norm)
         print 'saved ijxy=',self.xi,self.yi,self.X[self.xi],self.Y
     def R11_r_calc_save(self,f_handle,label=''):
+        """ 
+        Calculates and saves R11(r)
+        """
         # calculate and save R11(r) and length scales
         # for manufactured solution only
         if self.manufactured:
@@ -642,23 +794,41 @@ class sim:
     ###################################################################
     # Time integral functions
     def extract_pt_from_all(self):
+        """ 
+        extract a single point for all time t
+        extracts from Xall, Yall, Zall, and Uall
+        at point xi,yi
+        assumes Z is homogeneous direction
+        """
         self.X = self.Xall[self.xi,self.yi,0]
         self.Y = self.Yall[self.xi,self.yi,0]
         self.Z = self.Zall
         self.U = self.Uall[:,self.xi,self.yi,:]
 
     def set_manufactured_tau(self):
+        """
+        sets u as an equation using option 1 or 2
+        for use with the manufactured length scale calculations
+        """
         self.u=np.empty((len(self.t),)+(20,))
         if self.option==1:
             self.u = (np.cos(self.t)*np.exp(-1.*self.t)).reshape((len(self.t),1)) + 0.08*(2.*np.random.random((len(self.t),)+self.u.shape[1:])-1.0)
         elif self.option==2:
             self.u = np.cos(self.t).reshape((len(self.t),1)) + 0.08*(2.*np.random.random((len(self.t),)+self.u.shape[1:])-1.0)
     def set_uprime_tau(self):
+        """
+        calculates fluctuations u' values as U_instant-u_avg
+        saves as self.u
+        """
         # calc u' v' and w'  velocity prime values
         u_avg = np.nanmean(self.U,axis=self.homogeneous)
         self.u = self.U-u_avg
 
     def calc_R11_tau_sim(self):
+        """
+        Calculates R_{11}(t) from u and the time distance
+        could use method=0,1, or 2
+        """
         nt = int(self.u.shape[0]/2.) # half of time domain
         self.R11 = np.zeros(nt)
         if self.method==0:
@@ -682,6 +852,9 @@ class sim:
         self.R11_norm =  self.R11/self.R11[0]
 
     def plot_set_label_tau(self):
+       """ 
+       set self.label using given direction, X, Y, method, and option used
+       """ 
             self.label='sim,%s,x=%.4f,y=%.4f,m=%i,o=%i'%(
             self.direction,
             self.X ,
@@ -689,11 +862,17 @@ class sim:
             self.method ,
             self.option ,)
     def plot_R11_tau_sim(self,ax,marker='-',label='',**kwargs):
+        """
+        plots self.R11_norm vs self.t on ax axis
+        """
         self.plot_set_label_tau()
         ax.plot(self.tau,self.R11_norm,marker,label=self.label+','+label,**kwargs)
 
         #return T,self.R11_norm
     def plot_axis_labels_tau(self,ax):
+        """
+        add axis labels on R_11(r) ax plot
+        """
         ax.set_xlabel(r'$\tau/\tau_\mathrm{ref}$',**self.labelfont)
         if self.direction=='u':
             ax.set_ylabel(r'$R_{11}(\tau)/R_{11}(0)$',**self.labelfont)
@@ -704,10 +883,17 @@ class sim:
         ax.legend(loc='best',numpoints=1)
         plt.tight_layout()
     def calc_integral_time_T(self):
+        """
+        calculate the integral time scale  T=int(R11,tau,0,max(tau))
+        """
         # calc tau integral scale
         self.T = np.trapz(self.R11_norm,x=self.tau)
         print 'T= ',self.T
     def calc_taylor_time_lambda(self,ax=None):
+        """
+        calculate the taylor time scale  lambda=(-f''/2.)^-0.5
+        where f''=d2R/dt2
+        """
         t=self.tau
         R11=self.R11_norm
 
@@ -728,6 +914,13 @@ class sim:
         print 'TaylorT=',self.lambdaf
 
     def Manufactured_R11_tau(self):
+        """
+        using manufactured u values, we have an equation for the expected R11
+        we can test our equations for calculating R11 using this
+        using option=1 or option=2
+        
+        Returns R11_norm(tau)
+        """
         L = self.t[-1]-self.t[0]
         # option 1
         if self.option==1:
@@ -751,6 +944,9 @@ class sim:
         return R11_norm
 
     def R11_tau_calc_plot(self,ax,label=''):
+        """
+        Calculate and plot R11(tau) on ax
+        """
         # calculate and plot R11(tau)
         # for manufactured solution only
         if self.manufactured:
@@ -787,6 +983,9 @@ class sim:
             self.plot_set_label_tau()
             ax.plot(self.tau,R11simMNF,marker='x',linewidth=0,label=self.label+' analytic')
     def save_R11_tau(self,f_handle,):
+        """
+        save R11(r) to R11_output/XYR11/ijXYR11_xi_yi_X,Y
+        """
         np.savetxt(f_handle,[[self.X,self.Y,self.T,self.lambdaf]],delimiter=' ')
         if self.direction=='u':
             np.save(self.sim_dir+'R11_output/XYR11/ijXYR11_%i_%i_%.4f_%.4f'%(self.xi,self.yi,self.X,self.Y),self.R11_norm)
@@ -798,6 +997,9 @@ class sim:
             np.save(self.sim_dir+'R33_output/XYR33/ijXYR33_%i_%i_%.4f_%.4f'%(self.xi,self.yi,self.X,self.Y),self.R11_norm)
         print 'saved ijxy=',self.xi,self.yi,self.X,self.Y
     def R11_tau_calc_save(self,f_handle,label=''):
+        """ 
+        Calculates and saves R11(r)
+        """
         # calculate and plot R11(tau)
         if self.loaded==False:
             if self.read_from=='box_probe':
