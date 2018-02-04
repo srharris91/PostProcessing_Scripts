@@ -17,6 +17,9 @@ class read_csv:
         If calc_options is None, then will call a bunch of default values listed in this function
         Otherwise, will use set_values(**calc_options) function to set the desired values
         """
+        # set flow density and u_inf freestream velocity
+        self.rho=1.2 # kg/m^3
+        self.uinf=50.1 #m/s
         if calc_options==None:
             self.sim_dir='./'
             self.title='X'
@@ -85,8 +88,14 @@ class read_csv:
         """ 
         Read in csv file using sim_dir and filename
         """
-        
         d=np.genfromtxt(self.sim_dir+self.csv,delimiter=',',names=True)
+        self.x=d['X']
+        self.y=d['Y']
+        self.z=d['Z']
+        self.mu=d['mu']
+        self.dudz=d['dudz']
+    def read_exp(self,filename):
+        d=np.genfromtxt(filename,delimiter=',')
         return d
 
     def read_csv_files(self):
@@ -153,35 +162,67 @@ class read_csv:
         self.Zall=np.load(self.sim_dir+'Zall.npy')
         self.t=np.arange(self.Uall.shape[0]) * 1.E-7 * 1000
 
-    def plot_csv(self,colormap=True):
+    def plot_csv(self,ax):
         """
-        Plots the first slice of Uall in the Xall, Yall plane
+        Plots the first slice of u in the x, z plane
         """
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        if colormap:
-            if self.direction=='u':
-                vmin,vmid,vmax = 0.,0.35,0.7
-            elif self.direction=='v':
-                vmin,vmid,vmax=-0.05,0.,0.05
-            elif self.direction=='w':
-                vmin,vmid,vmax = -0.05,0.,0.05
-            colorvalues = np.linspace(vmin,vmax,100)
-            ax.contour (self.Xall[:,:,0],self.Yall[:,:,0],self.Uall[0,:,:,0],colorvalues,cmap='jet',vmin=vmin,vmax=vmax)
-            plt.colorbar(
-            ax.contourf(self.Xall[:,:,0],self.Yall[:,:,0],self.Uall[0,:,:,0],colorvalues,cmap='jet',vmin=vmin,vmax=vmax)
-            ,ticks=[vmin,vmid,vmax])
-        else:
-            ax.contour (self.Xall[:,:,0],self.Yall[:,:,0],self.Uall[0,:,:,0],30,cmap='jet')
-            plt.colorbar(
-            ax.contourf(self.Xall[:,:,0],self.Yall[:,:,0],self.Uall[0,:,:,0],30,cmap='jet')
-            ,)
+        #ax.tricontour (    self.x,self.z,self.dudz,30,cmap='jet')
+        plt.colorbar(
+            ax.tricontourf(self.x,self.z,self.dudz,300,cmap='jet'))
         ax.axis('equal')
-        ax.set_title('instantaneous snapshot')
-        plt.xlabel('X',**self.labelfont)
-        plt.ylabel('Y',**self.labelfont)
+        ax.set_title('dudz')
+        #plt.xlabel('X',**self.labelfont)
+        #plt.ylabel('Y',**self.labelfont)
+        plt.xlabel('X')
+        plt.ylabel('Y')
         plt.tight_layout()
 
+    def plot_dudz(self,ax):
+        """
+        Plots the first slice of dudz in the x axis on the plate
+        """
+        #ax.tricontour (    self.x,self.z,self.dudz,30,cmap='jet')
+        ax.set_title('dudz')
+        x=self.z==0
+        print x
+        ax.plot(self.x[x],self.dudz[x],'.')
+        #plt.xlabel('X',**self.labelfont)
+        #plt.ylabel('Y',**self.labelfont)
+        plt.xlabel('X')
+        plt.ylabel('dudz')
+        plt.tight_layout()
+
+    def plot_Cf(self,ax,label='CFX'):
+        """
+        Plots skin Cf on the x axis on the plate
+        """
+        #ax.tricontour (    self.x,self.z,self.dudz,30,cmap='jet')
+        ax.set_title('Cf')
+
+        # plot CFX values
+        #rho=1.1839 # kg/m^3
+
+        x=self.z==0
+        Rex=self.rho*self.uinf*self.x[x] / (np.mean(self.mu))
+        tau_w = self.mu[x]*self.dudz[x]
+        Cf = tau_w / (0.5 * self.rho * self.uinf**2)
+        print Rex.shape, Cf.shape
+        ax.plot(Rex,Cf,'*',label=label)
+
+
+
+        plt.xlabel('Rex')
+        plt.ylabel('Cf')
+        plt.tight_layout()
+
+    def plot_turb_lam_Cf(self,ax):
+        # plot turbulent (1/7 power law) and laminar equations
+        x=np.linspace(0,2,1000)
+        Rex=self.rho*self.uinf*x / (np.mean(self.mu))
+        turb=0.0576 * Rex**(-1./5.)
+        lam = 0.664/np.sqrt(Rex)
+        ax.plot(Rex,turb,'--',label='turbulent')
+        ax.plot(Rex,lam,'-',label='laminar')
     def plot_rms(self):
         """
         Plots an average of simulation data along with the rms values of the first time z plane
@@ -217,19 +258,44 @@ if __name__=="__main__":
     calc_options1={
             'sim_dir':'/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/NASA_Turb/FlatPlate_NASA/MultipleGrids/Structured/Coarse_done/',
             'filename':'export_vel_tau_shortened_to_be_read',
-            'sim_var':'Velocity u.Gradient Z [ s^-1 ]',
-            'X_interp_pts':120j,
-            'Y_interp_pts':160j,
-            'Z_interp_pts':26j,
+            #'sim_var':'dudz',
+            #'X_interp_pts':120j,
+            #'Y_interp_pts':160j,
+            #'Z_interp_pts':26j,
             }
+    # read in data from ANSYS sims
     sim1 = read_csv(calc_options1)
+    sim1.read_csv()
 
+    calc_options1['sim_dir']='/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/NASA_Turb/FlatPlate_NASA/MultipleGrids/Structured/Coarse/'
+    calc_options1['filename']='export_shortened'
+    sim2 = read_csv(calc_options1)
+    sim2.read_csv()
+
+    # open figure and set style
+    plt.style.use('seaborn-paper')
     fig = plt.figure()
     ax = plt.subplot(111)
-    data=sim1.read_csv()
-    print data
-    # for R11(tau)
-    #sim1.R11_tau_calc_plot(ax)
-    #sim1.plot_axis_labels_tau(ax)
-    # for R11(r)
+
+    # plot data from ANSYS
+    #sim1.plot_csv(ax)
+    #sim1.plot_dudz(ax)
+    sim1.plot_Cf(ax,label='CFX wrong BCs')
+    sim2.plot_Cf(ax,label='CFX right BCs')
+
+    # plot turbulent and laminar equations
+    sim2.plot_turb_lam_Cf(ax)
+
+    # plot experimental and Menter2009 data
+    menter2009SK = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/SchubauerKlebanoff_FlatPlate.csv')
+    #menter2009sim = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/Menter2009.csv')
+    menter2009sim = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/Menter2009_morepoints.csv')
+    ax.plot(menter2009SK[:,0],menter2009SK[:,1],'s',label='S+K')
+    ax.plot(menter2009sim[:,0],menter2009sim[:,1],'.',label='Menter 2009 sim')
+
+    # add legend
+    ax.legend(loc='best',numpoints=1,frameon=False)
+    ax.axis([0,4500000,0,0.01])
+    plt.tight_layout()
+
     plt.show()
