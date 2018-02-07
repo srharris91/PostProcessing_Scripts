@@ -94,8 +94,15 @@ class read_csv:
         self.z=d['Z']
         self.mu=d['mu']
         self.dudz=d['dudz']
-    def read_exp(self,filename):
-        d=np.genfromtxt(filename,delimiter=',')
+        try:
+            d['tau_wall']
+        except: 
+            print 'tau_wall variable does not exist, calculating from mu and dudz'
+        else: 
+            print 'tau_wall is defined'
+            self.tau_w=d['tau_wall']
+    def read_exp(self,filename,names=None):
+        d=np.genfromtxt(filename,delimiter=',',names=names)
         return d
 
     def read_csv_files(self):
@@ -197,22 +204,28 @@ class read_csv:
         Plots skin Cf on the x axis on the plate
         """
         #ax.tricontour (    self.x,self.z,self.dudz,30,cmap='jet')
-        ax.set_title('Cf')
+        ax.set_title(r'$C_f$')
 
         # plot CFX values
         #rho=1.1839 # kg/m^3
 
         x=self.z==0
-        Rex=self.rho*self.uinf*self.x[x] / (np.mean(self.mu))
-        tau_w = self.mu[x]*self.dudz[x]
-        Cf = tau_w / (0.5 * self.rho * self.uinf**2)
-        print Rex.shape, Cf.shape
-        ax.plot(Rex,Cf,'*',label=label)
+        self.Rex=self.rho*self.uinf*self.x[x] / (np.mean(self.mu))
+        try:
+            self.tau_w
+        except:
+            print 'calculating tau_w from mu and dudz'
+            self.tau_w = self.mu[x]*self.dudz[x]
+        else:
+            print 'extracting only points at wall for tau_wall'
+            self.tau_w = self.tau_w[x]
+        self.Cf = self.tau_w / (0.5 * self.rho * self.uinf**2)
+        ax.plot(self.Rex,self.Cf,'*',label=label)
 
 
 
-        plt.xlabel('Rex')
-        plt.ylabel('Cf')
+        plt.xlabel(r'$Re_x$')
+        plt.ylabel(r'$C_f$')
         plt.tight_layout()
 
     def plot_turb_lam_Cf(self,ax):
@@ -223,34 +236,6 @@ class read_csv:
         lam = 0.664/np.sqrt(Rex)
         ax.plot(Rex,turb,'--',label='turbulent')
         ax.plot(Rex,lam,'-',label='laminar')
-    def plot_rms(self):
-        """
-        Plots an average of simulation data along with the rms values of the first time z plane
-        """
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        average = np.nanmean(self.Uall,axis=self.homogeneous)[np.newaxis,:,:,np.newaxis]
-        ax.contour                  (self.Xall[:,:,0],self.Yall[:,:,0],average[0,:,:,0],30,cmap='jet')
-        plt.colorbar( ax.contourf   (self.Xall[:,:,0],self.Yall[:,:,0],average[0,:,:,0],30,cmap='jet') ,)
-        ax.axis('equal')
-        ax.set_title('average')
-        ax.set_xlabel('X',**self.labelfont)
-        ax.set_ylabel('Y',**self.labelfont)
-        plt.tight_layout()
-
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        u_prime = self.Uall-average
-        urms = np.nanmean((u_prime**2),axis=self.homogeneous)
-        ax.contour                  (self.Xall[:,:,0],self.Yall[:,:,0],urms,30,cmap='jet')
-        plt.colorbar( ax.contourf   (self.Xall[:,:,0],self.Yall[:,:,0],urms,30,cmap='jet') ,)
-        ax.axis('equal')
-        ax.set_title('urms')
-        ax.set_xlabel('X',**self.labelfont)
-        ax.set_ylabel('Y',**self.labelfont)
-        plt.tight_layout()
-
-
 
 
 if __name__=="__main__":
@@ -272,6 +257,12 @@ if __name__=="__main__":
     sim2 = read_csv(calc_options1)
     sim2.read_csv()
 
+    calc_options1['sim_dir']='/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/NASA_Turb/FlatPlate_NASA/MultipleGrids/Unstructured_Quad/Coarse_rightBCs/'
+    calc_options1['filename']='export_shortened'
+    sim3 = read_csv(calc_options1)
+    sim3.read_csv()
+
+
     # open figure and set style
     plt.style.use('seaborn-paper')
     fig = plt.figure()
@@ -280,22 +271,24 @@ if __name__=="__main__":
     # plot data from ANSYS
     #sim1.plot_csv(ax)
     #sim1.plot_dudz(ax)
-    sim1.plot_Cf(ax,label='CFX wrong BCs')
-    sim2.plot_Cf(ax,label='CFX right BCs')
+    sim1.plot_Cf(ax,label='CFX structured wrong BCs')
+    sim2.plot_Cf(ax,label='CFX structured right BCs')
+    sim3.plot_Cf(ax,label='CFX unstructured right BCs')
 
     # plot turbulent and laminar equations
     sim2.plot_turb_lam_Cf(ax)
 
     # plot experimental and Menter2009 data
-    menter2009SK = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/SchubauerKlebanoff_FlatPlate.csv')
+    menter2009SK = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/NASA_Turb/Exp_Previous_Paper_Data/SchubauerKlebanoff_FlatPlate.csv')
     #menter2009sim = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/Menter2009.csv')
-    menter2009sim = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/Menter2009_morepoints.csv')
+    menter2009sim = sim1.read_exp('/home/shaun/Documents/Winter2018/ME392_Research/FlatPlate/NASA_Turb/Exp_Previous_Paper_Data/Menter2009_morepoints.csv')
     ax.plot(menter2009SK[:,0],menter2009SK[:,1],'s',label='S+K')
     ax.plot(menter2009sim[:,0],menter2009sim[:,1],'.',label='Menter 2009 sim')
 
     # add legend
     ax.legend(loc='best',numpoints=1,frameon=False)
     ax.axis([0,4500000,0,0.01])
+    ax.set_title(r'$C_f$ for Schubauer and Klebanof plate (natural transition)')
     plt.tight_layout()
 
     plt.show()
