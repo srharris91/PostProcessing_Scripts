@@ -26,6 +26,7 @@ class read_csv:
             self.filename='OI_C'
             self.csv=self.filename+'.csv'
             self.sim_var='U'
+            self.plate='z'
             self.X_interp_pts=126j
             self.Y_interp_pts=169j
             self.Z_interp_pts=26j
@@ -33,7 +34,7 @@ class read_csv:
             print 'set default values'
         else:
             self.set_values(**calc_options)
-    def set_values(self,sim_dir='./',title='X',filename='OI_C',sim_var='U',X_interp_pts=126j,Y_interp_pts=169j,Z_interp_pts=26j,loaded=False):
+    def set_values(self,sim_dir='./',title='X',filename='OI_C',sim_var='U',plate='z',X_interp_pts=126j,Y_interp_pts=169j,Z_interp_pts=26j,loaded=False):
         """Initialize equation using calc_options dictionary input, if not specified, then the defaults are shown below
 
             self.sim_dir='./'
@@ -41,6 +42,7 @@ class read_csv:
             self.filename='OI_C'
             self.csv=self.filename+'.csv'
             self.sim_var='U'
+            self.plate='z'
             self.X_interp_pts=126j
             self.Y_interp_pts=169j
             self.Z_interp_pts=26j
@@ -52,6 +54,7 @@ class read_csv:
         self.filename=filename
         self.csv=self.filename+'.csv'
         self.sim_var=sim_var
+        self.plate=plate
         self.X_interp_pts=X_interp_pts
         self.Y_interp_pts=Y_interp_pts
         self.Z_interp_pts=Z_interp_pts
@@ -90,8 +93,13 @@ class read_csv:
         """
         d=np.genfromtxt(self.sim_dir+self.csv,delimiter=',',names=True)
         self.x=d['X']
-        self.y=d['Y']
-        self.z=d['Z']
+        # Change of y and z so that plate is on z=0 plane
+        if self.plate=='z':
+            self.y=d['Y']
+            self.z=d['Z']
+        elif self.plate=='y':
+            self.y=d['Z']
+            self.z=d['Y']
         self.mu=d['mu']
         self.dudz=d['dudz']
         try:
