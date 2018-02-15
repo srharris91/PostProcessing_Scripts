@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np  
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 
@@ -92,23 +92,23 @@ class read_csv:
         Read in csv file using sim_dir and filename
         """
         d=np.genfromtxt(self.sim_dir+self.csv,delimiter=',',names=True)
-        self.x=d['X']
+        self.x=d['X__m_']
         # Change of y and z so that plate is on z=0 plane
         if self.plate=='z':
-            self.y=d['Y']
-            self.z=d['Z']
+            self.y=d['Y__m_']
+            self.z=d['Z__m_']
         elif self.plate=='y':
-            self.y=d['Z']
-            self.z=d['Y']
-        self.mu=d['mu']
-        self.dudz=d['dudz']
+            self.y=d['Z__m_']
+            self.z=d['Y__m_']
+        self.mu=d['Dynamic_Viscosity__Pa_s_']
+        self.dudz=d['Velocity_uGradient_X__s1_']
         try:
-            d['tau_wall']
+            d['Wall_Shear__Pa_']
         except: 
             print 'tau_wall variable does not exist, calculating from mu and dudz'
         else: 
             print 'tau_wall is defined'
-            self.tau_w=d['tau_wall']
+            self.tau_w=d['Wall_Shear__Pa_']
     def read_exp(self,filename,names=None):
         d=np.genfromtxt(filename,delimiter=',',names=names)
         return d
@@ -207,7 +207,7 @@ class read_csv:
         plt.ylabel('dudz')
         plt.tight_layout()
 
-    def plot_Cf(self,ax,label='CFX'):
+    def plot_Cf(self,ax,**kwargs):
         """
         Plots skin Cf on the x axis on the plate
         """
@@ -228,7 +228,8 @@ class read_csv:
             print 'extracting only points at wall for tau_wall'
             self.tau_w = self.tau_w[x]
         self.Cf = self.tau_w / (0.5 * self.rho * self.uinf**2)
-        ax.plot(self.Rex,self.Cf,'*',label=label)
+        #ax.plot(self.Rex,self.Cf,'*',label=label)
+        ax.plot(self.Rex,self.Cf,**kwargs)
 
 
 
