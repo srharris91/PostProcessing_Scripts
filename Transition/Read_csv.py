@@ -231,8 +231,6 @@ class read_csv:
         #ax.plot(self.Rex,self.Cf,'*',label=label)
         ax.plot(self.Rex,self.Cf,**kwargs)
 
-
-
         plt.xlabel(r'$Re_x$')
         plt.ylabel(r'$C_f$')
         plt.tight_layout()
