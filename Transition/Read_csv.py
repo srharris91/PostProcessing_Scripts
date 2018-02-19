@@ -212,7 +212,7 @@ class read_csv:
         Plots skin Cf on the x axis on the plate
         """
         #ax.tricontour (    self.x,self.z,self.dudz,30,cmap='jet')
-        ax.set_title(r'$C_f$')
+        #ax.set_title(r'$C_f$')
 
         # plot CFX values
         #rho=1.1839 # kg/m^3
